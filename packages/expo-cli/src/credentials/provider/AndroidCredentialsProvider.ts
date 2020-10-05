@@ -4,6 +4,7 @@ import { Context } from '../context';
 import { Keystore } from '../credentials';
 import * as credentialsJsonReader from '../credentialsJson/read';
 import { runCredentialsManager } from '../route';
+import validateKeystoreAsync from '../utils/validateKeystore';
 import { SetupAndroidKeystore } from '../views/SetupAndroidKeystore';
 import { CredentialsProvider } from './provider';
 
@@ -18,6 +19,7 @@ interface AppLookupParams {
 
 interface Options {
   nonInteractive: boolean;
+  skipCredentialsCheck: boolean;
 }
 
 export default class AndroidCredentialsProvider implements CredentialsProvider {
@@ -78,12 +80,22 @@ export default class AndroidCredentialsProvider implements CredentialsProvider {
   public async getCredentialsAsync(
     src: CredentialsSource.LOCAL | CredentialsSource.REMOTE
   ): Promise<AndroidCredentials> {
+    let credentials: AndroidCredentials;
+
     switch (src) {
       case CredentialsSource.LOCAL:
-        return await this.getLocalAsync();
+        credentials = await this.getLocalAsync();
+        break;
       case CredentialsSource.REMOTE:
-        return await this.getRemoteAsync();
+        credentials = await this.getRemoteAsync();
+        break;
     }
+
+    if (!this.options.skipCredentialsCheck) {
+      await validateKeystoreAsync(credentials.keystore);
+    }
+
+    return credentials;
   }
 
   private async getRemoteAsync(): Promise<AndroidCredentials> {
@@ -91,6 +103,7 @@ export default class AndroidCredentialsProvider implements CredentialsProvider {
       this.ctx,
       new SetupAndroidKeystore(this.projectFullName, {
         allowMissingKeystore: false,
+        skipKeystoreValidation: false,
       })
     );
     const keystore = await this.ctx.android.fetchKeystore(this.projectFullName);

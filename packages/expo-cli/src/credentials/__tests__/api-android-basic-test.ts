@@ -10,6 +10,8 @@ import {
 } from '../test-fixtures/mocks-android';
 import { testExperienceName, testJester2ExperienceName } from '../test-fixtures/mocks-constants';
 
+jest.mock('../utils/validateKeystore');
+
 beforeEach(() => {});
 
 describe('AndroidApi - Basic Tests', () => {
